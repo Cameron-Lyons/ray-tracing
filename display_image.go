@@ -6,8 +6,34 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
+	"math"
 	"os"
 )
+
+func hit_sphere(center Vec3, radius float32, r ray) float32 {
+	oc := vec_sub(r.origin, center)
+	a := vec_dot(r.direction, r.direction)
+	b := vec_dot(oc, r.direction)
+	c := vec_dot(oc, oc) - radius*radius
+	discriminant := b*b - a*c
+	if discriminant > 0 {
+		return -b - float32(math.Sqrt(float64(discriminant)))/a
+	} else {
+		return -1
+	}
+}
+
+func ray_color(r ray) Vec3 {
+	t := hit_sphere(Vec3{0, 0, -1}, 0.5, r)
+	if t > 0 {
+		N := unit_vector(vec_sub(point_at_parameter(r, t), Vec3{0, 0, -1}))
+		return vec_mul_scalar(N, 0.5)
+	} else {
+		unit_direction := unit_vector(r.direction)
+		t = 0.5 * (unit_direction.y + 1)
+		return vec_mul_scalar(Vec3{1, 1, 1}, 1-t)
+	}
+}
 
 func main() {
 	// Image
@@ -27,6 +53,7 @@ func main() {
 	vertical := Vec3{0, viewport_hieght, 0}
 	lower_left_corner := Vec3{-viewport_width / 2, -viewport_hieght / 2, -focal_length}
 
+	// Render
 	for j := image_height - 1; j >= 0; j-- {
 		for i := 0; i < image_width; i++ {
 
