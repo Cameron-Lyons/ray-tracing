@@ -13,11 +13,11 @@ import (
 func hit_sphere(center Vec3, radius float32, r ray) float32 {
 	oc := vec_sub(r.origin, center)
 	a := vec_dot(r.direction, r.direction)
-	b := vec_dot(oc, r.direction)
-	c := vec_dot(oc, oc) - radius*radius
-	discriminant := b*b - a*c
+	half_b := vec_dot(oc, r.direction)
+	c := vec_len_squared(oc) - radius*radius
+	discriminant := half_b*half_b - a*c
 	if discriminant > 0 {
-		return -b - float32(math.Sqrt(float64(discriminant)))/a
+		return -half_b - float32(math.Sqrt(float64(discriminant)))/(a)
 	} else {
 		return -1
 	}
@@ -30,7 +30,7 @@ func ray_color(r ray) Vec3 {
 		return vec_mul_scalar(N, 0.5)
 	} else {
 		unit_direction := unit_vector(r.direction)
-		t = 0.5 * (unit_direction.y + 1)
+		t = 0.5 * (unit_direction.Y + 1)
 		return vec_mul_scalar(Vec3{1, 1, 1}, 1-t)
 	}
 }
