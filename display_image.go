@@ -12,7 +12,7 @@ import (
 
 func hit_sphere(center Vec3, radius float32, r ray) float32 {
 	oc := vec_sub(r.origin, center)
-	a := vec_dot(r.direction, r.direction)
+	a := vec_len_squared(r.direction)
 	half_b := vec_dot(oc, r.direction)
 	c := vec_len_squared(oc) - radius*radius
 	discriminant := half_b*half_b - a*c
