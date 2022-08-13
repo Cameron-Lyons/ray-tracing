@@ -19,8 +19,8 @@ func main() {
 	for j := image_height - 1; j >= 0; j-- {
 		for i := 0; i < image_width; i++ {
 
-			r := float64(i) / float64(image_width-1)
-			g := float64(j) / float64(image_height-1)
+			r := float32(i) / float32(image_width-1)
+			g := float32(j) / float32(image_height-1)
 			b := 0.25
 
 			ir := int(255.999 * r)
