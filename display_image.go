@@ -10,11 +10,22 @@ import (
 )
 
 func main() {
-
+	// Image
+	const aspectRatio = 16.0 / 9.0
 	const image_width int = 256
-	const image_height int = 256
+	const image_height int = int(float32(image_width) / aspectRatio)
 
 	image := image.NewRGBA(image.Rect(0, 0, image_width, image_height))
+
+	// Camera
+	const viewport_hieght = 2.0
+	const viewport_width = aspectRatio * viewport_hieght
+	const focal_length = 1.0
+
+	origin = Vec3{0, 0, 0}
+	horizontal := Vec3{viewport_width, 0, 0}
+	vertical := Vec3{0, viewport_hieght, 0}
+	lower_left_corner := Vec3{-viewport_width / 2, -viewport_hieght / 2, -focal_length}
 
 	for j := image_height - 1; j >= 0; j-- {
 		for i := 0; i < image_width; i++ {
