@@ -20,7 +20,9 @@ func (s sphere) hit(r ray, t_min float32, t_max float32, rec hit_record) bool {
 		}
 		rec.t = root
 		rec.p = point_at_parameter(r, root)
-		rec.normal = unit_vector(vec_sub(rec.p, s.center))
+		outward_normal := vec_div_scalar(vec_sub(rec.p, s.center), s.radius)
+		rec.front_face, rec.normal = set_face_normal(r, outward_normal)
+		return true
 	}
 	return false
 }
