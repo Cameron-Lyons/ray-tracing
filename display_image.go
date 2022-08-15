@@ -38,7 +38,7 @@ func main() {
 	const viewport_width = aspectRatio * viewport_hieght
 	const focal_length = 1.0
 
-	origin = Vec3{0, 0, 0}
+	origin := Vec3{0, 0, 0}
 	horizontal := Vec3{viewport_width, 0, 0}
 	vertical := Vec3{0, viewport_hieght, 0}
 	lower_left_corner := Vec3{-viewport_width / 2, -viewport_hieght / 2, -focal_length}
@@ -46,16 +46,11 @@ func main() {
 	// Render
 	for j := image_height - 1; j >= 0; j-- {
 		for i := 0; i < image_width; i++ {
-
-			r := float32(i) / float32(image_width-1)
-			g := float32(j) / float32(image_height-1)
-			b := 0.25
-
-			ir := int(255.999 * r)
-			ig := int(255.999 * g)
-			ib := int(255.990 * b)
-
-			image.Set(i, j, color.RGBA{uint8(ir), uint8(ig), uint8(ib), 255})
+			u := float32(i) / float32(image_width-1)
+			v := float32(j) / float32(image_height-1)
+			ray := ray{origin, vec_add(vec_add(vec_add(lower_left_corner, vec_mul_scalar(horizontal, u)), vec_mul_scalar(vertical, v)), Vec3{0, 0, focal_length})}
+			col := ray_color(ray, world)
+			image.Set(i, j, color.RGBA{uint8(255.99 * col.X), uint8(255.99 * col.Y), uint8(255.99 * col.Z), 255})
 		}
 	}
 	draw.Draw(image, image.Bounds(), image, image.Bounds().Min, draw.Src)
