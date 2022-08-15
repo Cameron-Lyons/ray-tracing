@@ -43,6 +43,11 @@ func main() {
 
 	image := image.NewRGBA(image.Rect(0, 0, image_width, image_height))
 
+	// World
+	var world hittable_list
+	world.list = append(world.list, sphere{Vec3{0, 0, -1}, 0.5})
+	world.list = append(world.list, sphere{Vec3{0, -100.5, -1}, 100})
+
 	// Camera
 	const viewport_hieght = 2.0
 	const viewport_width = aspectRatio * viewport_hieght
