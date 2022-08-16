@@ -1,8 +1,5 @@
 package main
 
-type material struct {
-}
-
 type hit_record struct {
 	t          float32
 	p          Vec3

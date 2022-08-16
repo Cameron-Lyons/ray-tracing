@@ -5,6 +5,7 @@ import "math"
 type sphere struct {
 	center Vec3
 	radius float32
+	mat    material
 }
 
 func (s sphere) hit(r ray, t_min float32, t_max float32, rec hit_record) bool {
@@ -22,6 +23,7 @@ func (s sphere) hit(r ray, t_min float32, t_max float32, rec hit_record) bool {
 		rec.p = point_at_parameter(r, root)
 		outward_normal := vec_div_scalar(vec_sub(rec.p, s.center), s.radius)
 		rec.front_face, rec.normal = set_face_normal(r, outward_normal)
+		rec.mat = s.mat
 		return true
 	}
 	return false
