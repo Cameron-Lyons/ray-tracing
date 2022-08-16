@@ -1,10 +1,14 @@
 package main
 
+type material struct {
+}
+
 type hit_record struct {
 	t          float32
 	p          Vec3
 	normal     Vec3
 	front_face bool
+	mat        material
 }
 
 type hittable interface {
