@@ -29,8 +29,10 @@ func ray_color(r ray, world hittable, depth int) Vec3 {
 func main() {
 	// Image
 	const aspectRatio = 16.0 / 9.0
-	const image_width int = 256
+	const image_width int = 400
 	const image_height int = int(float32(image_width) / aspectRatio)
+	const samples_per_pixel int = 100
+	const max_depth int = 50
 
 	image := image.NewRGBA(image.Rect(0, 0, image_width, image_height))
 
