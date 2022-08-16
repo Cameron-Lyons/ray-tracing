@@ -73,3 +73,8 @@ func random_in_unit_sphere() Vec3 {
 		}
 	}
 }
+
+func near_zero(vec Vec3) bool {
+	s := 1e-8
+	return (float64(vec.X) < s && float64(vec.Y) < s && float64(vec.Z) < s)
+}
