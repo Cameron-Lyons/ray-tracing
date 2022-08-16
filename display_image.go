@@ -53,12 +53,13 @@ func main() {
 
 	// Render
 	for j := image_height - 1; j >= 0; j-- {
+		pixel_color := Color(0, 0, 0)
 		for i := 0; i < image_width; i++ {
 			u := float32(i) / float32(image_width-1)
 			v := float32(j) / float32(image_height-1)
 			ray := ray{origin, vec_add(vec_add(vec_add(lower_left_corner, vec_mul_scalar(horizontal, u)), vec_mul_scalar(vertical, v)), Vec3{0, 0, focal_length})}
-			col := ray_color(ray, world)
-			image.Set(i, j, color.RGBA{uint8(255.99 * col.X), uint8(255.99 * col.Y), uint8(255.99 * col.Z), 255})
+			pixel_color += ray_color(ray, world, max_depth)
+			image.Set(i, j, color.RGBA{uint8(255.99 * pixel_color.X), uint8(255.99 * pixel_color.Y), uint8(255.99 * pixel_color.Z), 255})
 		}
 	}
 	draw.Draw(image, image.Bounds(), image, image.Bounds().Min, draw.Src)
