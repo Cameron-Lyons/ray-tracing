@@ -13,7 +13,8 @@ import (
 func ray_color(r ray, world hittable) Vec3 {
 	var rec hit_record
 	if world.hit(r, 0.0, math.MaxFloat32, rec) {
-		return vec_mul_scalar(vec_add(rec.normal, Vec3{1, 1, 1}), 0.5)
+		target := vec_add(vec_add(rec.p, rec.normal), random_in_unit_sphere())
+		return vec_mul_scalar(ray_color(ray{rec.p, unit_vector(vec_sub(target, rec.p))}, world), 0.5)
 	}
 	unit_direction := unit_vector(r.direction)
 	t := 0.5 * (unit_direction.Y + 1.0)
