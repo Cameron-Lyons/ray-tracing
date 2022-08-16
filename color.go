@@ -21,9 +21,9 @@ func write_color(file *os.File, pixel_color Color, samples_per_pixel int) {
 	b := pixel_color.B
 
 	scale := 1.0 / float64(samples_per_pixel)
-	r = scale * float64(r)
-	g = scale * float64(g)
-	b = scale * float64(b)
+	r = math.Sqrt(scale * r)
+	g = math.Sqrt(scale * g)
+	b = math.Sqrt(scale * b)
 
 	r = clamp(r, 0.0, 0.999)
 	g = clamp(g, 0.0, 0.999)
