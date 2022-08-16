@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"image/color"
 	"math"
 	"os"
 )
@@ -24,5 +24,5 @@ func write_color(file *os.File, pixel_color color, samples_per_pixel int) {
 	g = clamp(g, 0.0, 0.999)
 	b = clamp(b, 0.0, 0.999)
 
-	fmt.Fprintf(file, "%d %d %d\n", int(255.99*r), int(255.99*g), int(255.99*b))
+	image.Set(i, j, color.RGBA{uint8(255.99 * color.X), uint8(255.99 * color.Y), uint8(255.99 * color.Z), 255})
 }

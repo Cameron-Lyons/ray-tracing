@@ -1,6 +1,9 @@
 package main
 
-import "math"
+import (
+	"math"
+	"math/rand"
+)
 
 // Vec3 is a 3D vector
 type Vec3 struct {
@@ -60,4 +63,13 @@ func vec_cross(a, b Vec3) Vec3 {
 
 func unit_vector(a Vec3) Vec3 {
 	return vec_div_scalar(a, vec_len(a))
+}
+
+func random_in_unit_sphere() Vec3 {
+	for {
+		p := Vec3{rand.Float32(), rand.Float32(), rand.Float32()}
+		if vec_len_squared(p) < 1.0 {
+			return p
+		}
+	}
 }
