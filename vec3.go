@@ -78,3 +78,7 @@ func near_zero(vec Vec3) bool {
 	s := 1e-8
 	return (float64(vec.X) < s && float64(vec.Y) < s && float64(vec.Z) < s)
 }
+
+func reflect(v, n Vec3) Vec3 {
+	return vec_sub(v, vec_mul_scalar(n, 2*vec_dot(v, n)))
+}
