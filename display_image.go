@@ -17,9 +17,13 @@ func ray_color(r ray, world hittable, depth int) Vec3 {
 		return Vec3{0, 0, 0}
 	}
 
-	if world.hit(r, 0.0, math.MaxFloat32, rec) {
-		target := vec_add(vec_add(rec.p, rec.normal), random_in_unit_sphere())
-		return vec_mul_scalar(ray_color(ray{rec.p, unit_vector(vec_sub(target, rec.p))}, world, depth-1), 0.5)
+	if world.hit(r, 0.001, math.MaxFloat32, rec) {
+		scattered := ray{}
+		attenuation := Color{}
+		if rec.material.scatter(r, rec, attenuation, scattered) {
+			return vec_mul_scalar(ray_color(scattered, world, depth-1), attenuation)
+		}
+		return Color(0, 0, 0)
 	}
 	unit_direction := unit_vector(r.direction)
 	t := 0.5 * (unit_direction.Y + 1.0)
@@ -38,8 +42,11 @@ func main() {
 
 	// World
 	var world hittable_list
-	world.list = append(world.list, sphere{Vec3{0, 0, -1}, 0.5})
-	world.list = append(world.list, sphere{Vec3{0, -100.5, -1}, 100})
+
+	material_ground := lambertian{Color(0.8, 0.8, 0.0)}
+	material_center := lambertian{Color(0.7, 0.3, 0.3)}
+	material_ceneter := metal{Color(0.8, 0.8, 0.8)}
+	material_ceneter := metal{Color(0.8, 0.6, 0.2)}
 
 	// Camera
 	const viewport_hieght = 2.0
