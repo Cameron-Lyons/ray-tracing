@@ -82,3 +82,15 @@ func near_zero(vec Vec3) bool {
 func reflect(v, n Vec3) Vec3 {
 	return vec_sub(v, vec_mul_scalar(n, 2*vec_dot(v, n)))
 }
+
+func refract(uv Vec3, n Vec3, etai_over_etat float32) Vec3 {
+	uv = unit_vector(uv)
+	dt := vec_dot(uv, n)
+	discriminant := 1.0 - etai_over_etat*etai_over_etat*(1.0-dt*dt)
+	if discriminant > 0 {
+		refracted := vec_mul_scalar(vec_sub(vec_mul_scalar(uv, etai_over_etat), vec_mul_scalar(n, dt)), etai_over_etat)
+		return refracted
+	} else {
+		return Vec3{0, 0, 0}
+	}
+}
