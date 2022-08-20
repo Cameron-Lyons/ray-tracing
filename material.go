@@ -62,7 +62,12 @@ type dielectric struct {
 		}
 		return true
 	}
-}
+
+	func reflectance(ray, hit_record, attenuation Color) float64 {
+		r0 := (1.0 - ref_idx) / (1.0 + ref_idx)
+		r0 = r0 * r0
+		return r0 + (1.0 - r0) * math.Pow(1.0 - cosine, 5)
+	}
 
 func (m *material) scatter(ray, hit_record, attenuation Color) (Vec3, ray) {
 	return m.scatter(ray, hit_record, attenuation)
