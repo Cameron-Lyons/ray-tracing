@@ -43,20 +43,15 @@ func main() {
 	// World
 	var world hittable_list
 
-	material_ground := lambertian{Color(0.8, 0.8, 0.0)}
-	material_center := dielectric{Color(0.7, 0.3, 0.3)}
-	material_ceneter := dielectric{Color(0.8, 0.8, 0.8)}
-	material_ceneter := metal{Color(0.8, 0.6, 0.2)}
+	R := math.Cos(math.Pi / 4)
 
+	material_left := lambertian{Color{0, 0, 1}, func(ray, hit_record, attenuation Color) bool {}}
+	material_right := lambertian{Color{1, 0, 0}, func(ray, hit_record, attenuation Color) bool {}}
+
+	world.list = append(world.list, sphere{Vec3{0, 0, -1}, 0.5, material_left})
+	world.list = append(world.list, sphere{Vec3{0, 0, -1}, -0.45, material_right})
 	// Camera
-	const viewport_hieght = 2.0
-	const viewport_width = aspectRatio * viewport_hieght
-	const focal_length = 1.0
-
-	origin := Vec3{0, 0, 0}
-	horizontal := Vec3{viewport_width, 0, 0}
-	vertical := Vec3{0, viewport_hieght, 0}
-	lower_left_corner := Vec3{-viewport_width / 2, -viewport_hieght / 2, -focal_length}
+	cam := camera{90, aspectRatio, 0.1}
 
 	// Render
 	for j := image_height - 1; j >= 0; j-- {
