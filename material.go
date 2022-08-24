@@ -32,37 +32,24 @@ type metal struct {
 type dielectric struct {
 	ref_idx float64
 	scatter func(ray, hit_record, attenuation Color) bool {
-		attenuation = Color{1.0, 1.0, 1.0}
-		reflected = reflect(ray.direction, rec.normal)
-		var outward_normal Vec3
-		var ni_over_nt float64
-		var cosine float64
-		if ray.direction.dot(rec.normal) > 0.0 {
-			outward_normal = -rec.normal
-			ni_over_nt = ref_idx
-			cosine = ref_idx * ray.direction.dot(rec.normal) / ray.direction.len()
-		} else {
-			outward_normal = rec.normal
-			ni_over_nt = 1.0 / ref_idx
-			cosine = -ray.direction.dot(rec.normal) / ray.direction.len()
-		}
-		var refracted Vec3
-		var reflect_prob float64
-		var refracted_prob float64
-		if refract(ray.direction, outward_normal, ni_over_nt, &refracted) {
-			reflect_prob = schlick(cosine, ref_idx)
-			refracted_prob = 1.0 - reflect_prob
-		} else {
-			scattered = ray(rec.p, reflected)
-			return true
-		}
-		if rand.Float64() < reflect_prob {
-			scattered = ray(rec.p, reflected)
-		} else {
-			scattered = ray(rec.p, refracted)
-		}
-		return true
+		attenuation := Color{1.0, 1.0, 1.0}
+		refraction_ratio := rec.front_face
+
+		unit_direction := unit_vector(scattered.direction)
+		cos_theta := math.Min(dot(unit_direction, rec.normal), 1.0)
+		sin_theta := math.Sqrt(1.0 - cos_theta * cos_theta)
+
+		cannot_refract := refraction_ratio * sin_theta > 1.0
+		
+		if cannot_refract {
+			direction := reflect(unit_direction, rec.normal)
 	}
+		else {
+			direction := refract(unit_direction, rec.normal, refraction_ratio)
+		}
+		scatterd := ray(rec.p, scattered.direction)
+
+		return true
 
 	func reflectance(ray, hit_record, attenuation Color) float64 {
 		r0 := (1.0 - ref_idx) / (1.0 + ref_idx)
