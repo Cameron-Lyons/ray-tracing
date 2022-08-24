@@ -6,6 +6,8 @@ type camera struct {
 	vup Vec3
 	vfov float32
 	aspect_ratio float32
+	aperture float32
+	focus_dist float32
 	theta := vfov * (math.Pi / 180)
 	h := math.Tan(theta / 2)
 	viewport_hieght = 2 * half_height
@@ -20,8 +22,12 @@ type camera struct {
 	vertical = viewport_height * v
 	lower_left_corner = vec_sub(origin, vec_mul_scalar(horizontal, 0.5), vec_mul_scalar(vertical, 0.5), vec_mul_scalar(w, focal_length))
 
+	lens_radius = aperture / 2
+
 	ray get_ray(s, t) ray {
-		return ray(origin, vec_add(vec_add(vec_add(lower_left_corner, vec_mul_scalar(horizontal, s)), vec_mul_scalar(vertical, t)), Vec3{0, 0, focal_length}))
+		rd := vec_mul_scalar(vec_add(vec_mul_scalar(u, rand.Float64()), vec_mul_scalar(v, rand.Float64())), lens_radius)
+		offset := vec_mul_scalar(vec_add(vec_mul_scalar(u, rand.Float64()), vec_mul_scalar(v, rand.Float64())), focal_length)
+		return ray{origin + offset, vec_add(lookfrom + offset, rd)}
 	}
 }
 
