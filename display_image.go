@@ -44,8 +44,8 @@ func main() {
 	var world hittable_list
 
 	material_ground := lambertian{Color(0.8, 0.8, 0.0)}
-	material_center := lambertian{Color(0.7, 0.3, 0.3)}
-	material_ceneter := metal{Color(0.8, 0.8, 0.8)}
+	material_center := dielectric{Color(0.7, 0.3, 0.3)}
+	material_ceneter := dielectric{Color(0.8, 0.8, 0.8)}
 	material_ceneter := metal{Color(0.8, 0.6, 0.2)}
 
 	// Camera
