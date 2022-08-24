@@ -41,7 +41,7 @@ type dielectric struct {
 
 		cannot_refract := refraction_ratio * sin_theta > 1.0
 		
-		if cannot_refract {
+		if cannot_refract || rand.Float64() < reflectance(ray, rec, attenuation) {
 			direction := reflect(unit_direction, rec.normal)
 	}
 		else {
