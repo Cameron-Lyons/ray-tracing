@@ -15,6 +15,7 @@ type lambertian struct {
 		return true
 	}
 	dielectric float64
+	albedo Color
 }
 
 type metal struct {
