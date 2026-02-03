@@ -5,14 +5,10 @@ import (
 	"math/rand"
 )
 
-// Vec3 is a 3D vector
 type Vec3 struct {
-	X float32
-	Y float32
-	Z float32
+	X, Y, Z float64
 }
 
-// Vector Functions
 func vec_add(a, b Vec3) Vec3 {
 	return Vec3{a.X + b.X, a.Y + b.Y, a.Z + b.Z}
 }
@@ -25,35 +21,23 @@ func vec_mul(a, b Vec3) Vec3 {
 	return Vec3{a.X * b.X, a.Y * b.Y, a.Z * b.Z}
 }
 
-func vec_div(a, b Vec3) Vec3 {
-	return Vec3{a.X / b.X, a.Y / b.Y, a.Z / b.Z}
+func vec_len(a Vec3) float64 {
+	return math.Sqrt(a.X*a.X + a.Y*a.Y + a.Z*a.Z)
 }
 
-func vec_len(a Vec3) float32 {
-	return float32(math.Sqrt(float64(a.X*a.X + a.Y*a.Y + a.Z*a.Z)))
+func vec_len_squared(a Vec3) float64 {
+	return a.X*a.X + a.Y*a.Y + a.Z*a.Z
 }
 
-func vec_len_squared(a Vec3) float32 {
-	return float32(a.X*a.X + a.Y*a.Y + a.Z*a.Z)
-}
-
-func vec_add_scalar(a Vec3, b float32) Vec3 {
-	return Vec3{a.X + b, a.Y + b, a.Z + b}
-}
-
-func vec_sub_scalar(a Vec3, b float32) Vec3 {
-	return Vec3{a.X - b, a.Y - b, a.Z - b}
-}
-
-func vec_mul_scalar(a Vec3, b float32) Vec3 {
+func vec_mul_scalar(a Vec3, b float64) Vec3 {
 	return Vec3{a.X * b, a.Y * b, a.Z * b}
 }
 
-func vec_div_scalar(a Vec3, b float32) Vec3 {
+func vec_div_scalar(a Vec3, b float64) Vec3 {
 	return Vec3{a.X / b, a.Y / b, a.Z / b}
 }
 
-func vec_dot(a, b Vec3) float32 {
+func vec_dot(a, b Vec3) float64 {
 	return a.X*b.X + a.Y*b.Y + a.Z*b.Z
 }
 
@@ -65,32 +49,52 @@ func unit_vector(a Vec3) Vec3 {
 	return vec_div_scalar(a, vec_len(a))
 }
 
+func random_vec3() Vec3 {
+	return Vec3{rand.Float64(), rand.Float64(), rand.Float64()}
+}
+
+func random_vec3_range(min, max float64) Vec3 {
+	return Vec3{
+		min + (max-min)*rand.Float64(),
+		min + (max-min)*rand.Float64(),
+		min + (max-min)*rand.Float64(),
+	}
+}
+
 func random_in_unit_sphere() Vec3 {
 	for {
-		p := Vec3{rand.Float32(), rand.Float32(), rand.Float32()}
+		p := random_vec3_range(-1, 1)
 		if vec_len_squared(p) < 1.0 {
 			return p
 		}
 	}
 }
 
-func near_zero(vec Vec3) bool {
+func random_unit_vector() Vec3 {
+	return unit_vector(random_in_unit_sphere())
+}
+
+func random_in_unit_disk() Vec3 {
+	for {
+		p := Vec3{rand.Float64()*2 - 1, rand.Float64()*2 - 1, 0}
+		if vec_len_squared(p) < 1.0 {
+			return p
+		}
+	}
+}
+
+func near_zero(v Vec3) bool {
 	s := 1e-8
-	return (float64(vec.X) < s && float64(vec.Y) < s && float64(vec.Z) < s)
+	return math.Abs(v.X) < s && math.Abs(v.Y) < s && math.Abs(v.Z) < s
 }
 
 func reflect(v, n Vec3) Vec3 {
 	return vec_sub(v, vec_mul_scalar(n, 2*vec_dot(v, n)))
 }
 
-func refract(uv Vec3, n Vec3, etai_over_etat float32) Vec3 {
-	uv = unit_vector(uv)
-	dt := vec_dot(uv, n)
-	discriminant := 1.0 - etai_over_etat*etai_over_etat*(1.0-dt*dt)
-	if discriminant > 0 {
-		refracted := vec_mul_scalar(vec_sub(vec_mul_scalar(uv, etai_over_etat), vec_mul_scalar(n, dt)), etai_over_etat)
-		return refracted
-	} else {
-		return Vec3{0, 0, 0}
-	}
+func refract(uv, n Vec3, etai_over_etat float64) Vec3 {
+	cos_theta := math.Min(vec_dot(vec_mul_scalar(uv, -1), n), 1.0)
+	r_out_perp := vec_mul_scalar(vec_add(uv, vec_mul_scalar(n, cos_theta)), etai_over_etat)
+	r_out_parallel := vec_mul_scalar(n, -math.Sqrt(math.Abs(1.0-vec_len_squared(r_out_perp))))
+	return vec_add(r_out_perp, r_out_parallel)
 }

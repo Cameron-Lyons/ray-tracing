@@ -1,21 +1,24 @@
 package main
 
 type hit_record struct {
-	t          float32
+	t          float64
+	u, v       float64
 	p          Vec3
 	normal     Vec3
 	front_face bool
 	mat        material
 }
 
-type hittable interface {
-	hit(r ray, t_min float32, t_max float32, h hit_record) bool
-	hit_record(r ray, t_min float32, t_max float32) hit_record
+func (rec *hit_record) set_face_normal(r ray, outward_normal Vec3) {
+	rec.front_face = vec_dot(r.direction, outward_normal) < 0
+	if rec.front_face {
+		rec.normal = outward_normal
+	} else {
+		rec.normal = vec_mul_scalar(outward_normal, -1)
+	}
 }
 
-func set_face_normal(r ray, outward_normal Vec3) (bool, Vec3) {
-	if vec_dot(r.direction, outward_normal) < 0 {
-		return true, outward_normal
-	}
-	return false, vec_mul_scalar(outward_normal, -1)
+type hittable interface {
+	hit(r ray, t_min float64, t_max float64, rec *hit_record) bool
+	bounding_box(time0, time1 float64) (aabb, bool)
 }

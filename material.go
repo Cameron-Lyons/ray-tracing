@@ -1,68 +1,97 @@
 package main
 
-type material struct {
-	scatter func(ray, hit_record, attenuation Color) (Vec3, ray)
+import (
+	"math"
+	"math/rand"
+)
+
+type material interface {
+	scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool
+	emitted(u, v float64, p Vec3) Vec3
 }
 
 type lambertian struct {
-	albedo  Color
-	scatter func(ray, hit_record, attenuation Color) bool {
-		if near_zero(scatter_direction){
-			scatter_direction = rec.normal
-		}
-		scattered = ray(rec.p, scatter_direction)
-		attenuation = albedo
-		return true
+	albedo texture
+}
+
+func (l lambertian) scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool {
+	scatter_direction := vec_add(rec.normal, random_unit_vector())
+	if near_zero(scatter_direction) {
+		scatter_direction = rec.normal
 	}
-	dielectric float64
-	albedo Color
+	*scattered = ray{rec.p, scatter_direction, r_in.time}
+	*attenuation = l.albedo.value(rec.u, rec.v, rec.p)
+	return true
+}
+
+func (l lambertian) emitted(u, v float64, p Vec3) Vec3 {
+	return Vec3{0, 0, 0}
 }
 
 type metal struct {
-	albedo  Color
-	fuzz    float64
-	scatter func(ray, hit_record, attenuation Color) bool {
-		reflected = reflect(ray.direction, rec.normal)
-		scattered = ray(rec.p, reflected + fuzz*random_in_unit_sphere())
-		attenuation = albedo
-		return scattered.direction.dot(rec.normal) > 0.0
-	}
+	albedo Vec3
+	fuzz   float64
+}
+
+func (m metal) scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool {
+	reflected := reflect(unit_vector(r_in.direction), rec.normal)
+	*scattered = ray{rec.p, vec_add(reflected, vec_mul_scalar(random_in_unit_sphere(), m.fuzz)), r_in.time}
+	*attenuation = m.albedo
+	return vec_dot(scattered.direction, rec.normal) > 0
+}
+
+func (m metal) emitted(u, v float64, p Vec3) Vec3 {
+	return Vec3{0, 0, 0}
 }
 
 type dielectric struct {
 	ref_idx float64
-	scatter func(ray, hit_record, attenuation Color) bool {
-		attenuation := Color{1.0, 1.0, 1.0}
-		refraction_ratio := rec.front_face
-
-		unit_direction := unit_vector(scattered.direction)
-		cos_theta := math.Min(dot(unit_direction, rec.normal), 1.0)
-		sin_theta := math.Sqrt(1.0 - cos_theta * cos_theta)
-
-		cannot_refract := refraction_ratio * sin_theta > 1.0
-		
-		if cannot_refract || rand.Float64() < reflectance(ray, rec, attenuation) {
-			direction := reflect(unit_direction, rec.normal)
-	}
-		else {
-			direction := refract(unit_direction, rec.normal, refraction_ratio)
-		}
-		scatterd := ray(rec.p, scattered.direction)
-
-		return true
-
-	func reflectance(ray, hit_record, attenuation Color) float64 {
-		r0 := (1.0 - ref_idx) / (1.0 + ref_idx)
-		r0 = r0 * r0
-		return r0 + (1.0 - r0) * math.Pow(1.0 - cosine, 5)
-	}
-
-func (m *material) scatter(ray, hit_record, attenuation Color) (Vec3, ray) {
-	return m.scatter(ray, hit_record, attenuation)
 }
 
-func (m *lambertian) scatter(ray, hit_record, attenuation Color) (Vec3, ray) {
-	return m.scatter(ray, hit_record, attenuation)
+func (d dielectric) scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool {
+	*attenuation = Vec3{1.0, 1.0, 1.0}
+	var refraction_ratio float64
+	if rec.front_face {
+		refraction_ratio = 1.0 / d.ref_idx
+	} else {
+		refraction_ratio = d.ref_idx
+	}
+
+	unit_direction := unit_vector(r_in.direction)
+	cos_theta := math.Min(vec_dot(vec_mul_scalar(unit_direction, -1), rec.normal), 1.0)
+	sin_theta := math.Sqrt(1.0 - cos_theta*cos_theta)
+
+	cannot_refract := refraction_ratio*sin_theta > 1.0
+
+	var direction Vec3
+	if cannot_refract || reflectance(cos_theta, refraction_ratio) > rand.Float64() {
+		direction = reflect(unit_direction, rec.normal)
+	} else {
+		direction = refract(unit_direction, rec.normal, refraction_ratio)
+	}
+
+	*scattered = ray{rec.p, direction, r_in.time}
+	return true
 }
 
-func (m *metal) scatter
+func (d dielectric) emitted(u, v float64, p Vec3) Vec3 {
+	return Vec3{0, 0, 0}
+}
+
+func reflectance(cosine, ref_idx float64) float64 {
+	r0 := (1 - ref_idx) / (1 + ref_idx)
+	r0 = r0 * r0
+	return r0 + (1-r0)*math.Pow(1-cosine, 5)
+}
+
+type diffuse_light struct {
+	emit texture
+}
+
+func (d diffuse_light) scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool {
+	return false
+}
+
+func (d diffuse_light) emitted(u, v float64, p Vec3) Vec3 {
+	return d.emit.value(u, v, p)
+}

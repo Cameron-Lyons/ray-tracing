@@ -1,3 +1,3 @@
-module display_image.go
+module raytracer
 
 go 1.18
