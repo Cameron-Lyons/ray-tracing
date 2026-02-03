@@ -19,7 +19,7 @@ func new_image_texture(filename string) image_texture {
 	if err != nil {
 		return image_texture{}
 	}
-	defer f.Close() //nolint:errcheck
+	defer func() { _ = f.Close() }()
 
 	img, err := png.Decode(f)
 	if err != nil {

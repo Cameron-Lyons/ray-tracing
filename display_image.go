@@ -177,8 +177,11 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	defer out.Close() //nolint:errcheck
 	if err := png.Encode(out, img); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	if err := out.Close(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
