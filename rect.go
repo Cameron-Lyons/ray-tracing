@@ -1,5 +1,10 @@
 package main
 
+import (
+	"math"
+	"math/rand"
+)
+
 type xy_rect struct {
 	x0, x1, y0, y1, k float64
 	mat                material
@@ -54,6 +59,26 @@ func (r xz_rect) hit(ray ray, t_min float64, t_max float64, rec *hit_record) boo
 
 func (r xz_rect) bounding_box(time0, time1 float64) (aabb, bool) {
 	return aabb{Vec3{r.x0, r.k - 0.0001, r.z0}, Vec3{r.x1, r.k + 0.0001, r.z1}}, true
+}
+
+func (r xz_rect) pdf_value(o, v Vec3) float64 {
+	var rec hit_record
+	if !r.hit(ray{o, v, 0}, 0.001, math.MaxFloat64, &rec) {
+		return 0
+	}
+	area := (r.x1 - r.x0) * (r.z1 - r.z0)
+	distance_squared := rec.t * rec.t * vec_len_squared(v)
+	cosine := math.Abs(vec_dot(v, rec.normal) / vec_len(v))
+	return distance_squared / (cosine * area)
+}
+
+func (r xz_rect) random(o Vec3) Vec3 {
+	random_point := Vec3{
+		r.x0 + rand.Float64()*(r.x1-r.x0),
+		r.k,
+		r.z0 + rand.Float64()*(r.z1-r.z0),
+	}
+	return vec_sub(random_point, o)
 }
 
 type yz_rect struct {

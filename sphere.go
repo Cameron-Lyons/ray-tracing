@@ -52,3 +52,20 @@ func (s sphere) bounding_box(time0, time1 float64) (aabb, bool) {
 		vec_add(s.center, Vec3{s.radius, s.radius, s.radius}),
 	}, true
 }
+
+func (s sphere) pdf_value(o, v Vec3) float64 {
+	var rec hit_record
+	if !s.hit(ray{o, v, 0}, 0.001, math.MaxFloat64, &rec) {
+		return 0
+	}
+	cos_theta_max := math.Sqrt(1 - s.radius*s.radius/vec_len_squared(vec_sub(s.center, o)))
+	solid_angle := 2 * math.Pi * (1 - cos_theta_max)
+	return 1 / solid_angle
+}
+
+func (s sphere) random(o Vec3) Vec3 {
+	direction := vec_sub(s.center, o)
+	distance_squared := vec_len_squared(direction)
+	uvw := new_onb(direction)
+	return uvw.local(random_to_sphere(s.radius, distance_squared))
+}

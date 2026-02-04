@@ -70,10 +70,6 @@ func random_in_unit_sphere() Vec3 {
 	}
 }
 
-func random_unit_vector() Vec3 {
-	return unit_vector(random_in_unit_sphere())
-}
-
 func random_in_unit_disk() Vec3 {
 	for {
 		p := Vec3{rand.Float64()*2 - 1, rand.Float64()*2 - 1, 0}
@@ -83,13 +79,28 @@ func random_in_unit_disk() Vec3 {
 	}
 }
 
-func near_zero(v Vec3) bool {
-	s := 1e-8
-	return math.Abs(v.X) < s && math.Abs(v.Y) < s && math.Abs(v.Z) < s
-}
-
 func reflect(v, n Vec3) Vec3 {
 	return vec_sub(v, vec_mul_scalar(n, 2*vec_dot(v, n)))
+}
+
+func random_cosine_direction() Vec3 {
+	r1 := rand.Float64()
+	r2 := rand.Float64()
+	z := math.Sqrt(1 - r2)
+	phi := 2 * math.Pi * r1
+	x := math.Cos(phi) * math.Sqrt(r2)
+	y := math.Sin(phi) * math.Sqrt(r2)
+	return Vec3{x, y, z}
+}
+
+func random_to_sphere(radius, distance_squared float64) Vec3 {
+	r1 := rand.Float64()
+	r2 := rand.Float64()
+	z := 1 + r2*(math.Sqrt(1-radius*radius/distance_squared)-1)
+	phi := 2 * math.Pi * r1
+	x := math.Cos(phi) * math.Sqrt(1-z*z)
+	y := math.Sin(phi) * math.Sqrt(1-z*z)
+	return Vec3{x, y, z}
 }
 
 func refract(uv, n Vec3, etai_over_etat float64) Vec3 {

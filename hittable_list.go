@@ -1,5 +1,7 @@
 package main
 
+import "math/rand"
+
 type hittable_list struct {
 	list []hittable
 }
@@ -40,4 +42,19 @@ func (l *hittable_list) bounding_box(time0, time1 float64) (aabb, bool) {
 		first_box = false
 	}
 	return output_box, true
+}
+
+func (l *hittable_list) pdf_value(o, v Vec3) float64 {
+	weight := 1.0 / float64(len(l.list))
+	sum := 0.0
+	for _, h := range l.list {
+		if ph, ok := h.(pdf_hittable); ok {
+			sum += weight * ph.pdf_value(o, v)
+		}
+	}
+	return sum
+}
+
+func (l *hittable_list) random(o Vec3) Vec3 {
+	return l.list[rand.Intn(len(l.list))].(pdf_hittable).random(o)
 }

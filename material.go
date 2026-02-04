@@ -6,25 +6,31 @@ import (
 )
 
 type material interface {
-	scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool
-	emitted(u, v float64, p Vec3) Vec3
+	scatter(r_in ray, rec hit_record, srec *scatter_record) bool
+	scattering_pdf(r_in ray, rec hit_record, scattered ray) float64
+	emitted(r_in ray, rec hit_record, u, v float64, p Vec3) Vec3
 }
 
 type lambertian struct {
 	albedo texture
 }
 
-func (l lambertian) scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool {
-	scatter_direction := vec_add(rec.normal, random_unit_vector())
-	if near_zero(scatter_direction) {
-		scatter_direction = rec.normal
-	}
-	*scattered = ray{rec.p, scatter_direction, r_in.time}
-	*attenuation = l.albedo.value(rec.u, rec.v, rec.p)
+func (l lambertian) scatter(r_in ray, rec hit_record, srec *scatter_record) bool {
+	srec.is_specular = false
+	srec.attenuation = l.albedo.value(rec.u, rec.v, rec.p)
+	srec.pdf_ptr = new_cosine_pdf(rec.normal)
 	return true
 }
 
-func (l lambertian) emitted(u, v float64, p Vec3) Vec3 {
+func (l lambertian) scattering_pdf(r_in ray, rec hit_record, scattered ray) float64 {
+	cosine := vec_dot(rec.normal, unit_vector(scattered.direction))
+	if cosine < 0 {
+		return 0
+	}
+	return cosine / math.Pi
+}
+
+func (l lambertian) emitted(r_in ray, rec hit_record, u, v float64, p Vec3) Vec3 {
 	return Vec3{0, 0, 0}
 }
 
@@ -33,14 +39,20 @@ type metal struct {
 	fuzz   float64
 }
 
-func (m metal) scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool {
+func (m metal) scatter(r_in ray, rec hit_record, srec *scatter_record) bool {
 	reflected := reflect(unit_vector(r_in.direction), rec.normal)
-	*scattered = ray{rec.p, vec_add(reflected, vec_mul_scalar(random_in_unit_sphere(), m.fuzz)), r_in.time}
-	*attenuation = m.albedo
-	return vec_dot(scattered.direction, rec.normal) > 0
+	srec.specular_ray = ray{rec.p, vec_add(reflected, vec_mul_scalar(random_in_unit_sphere(), m.fuzz)), r_in.time}
+	srec.attenuation = m.albedo
+	srec.is_specular = true
+	srec.pdf_ptr = nil
+	return true
 }
 
-func (m metal) emitted(u, v float64, p Vec3) Vec3 {
+func (m metal) scattering_pdf(r_in ray, rec hit_record, scattered ray) float64 {
+	return 0
+}
+
+func (m metal) emitted(r_in ray, rec hit_record, u, v float64, p Vec3) Vec3 {
 	return Vec3{0, 0, 0}
 }
 
@@ -48,8 +60,11 @@ type dielectric struct {
 	ref_idx float64
 }
 
-func (d dielectric) scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool {
-	*attenuation = Vec3{1.0, 1.0, 1.0}
+func (d dielectric) scatter(r_in ray, rec hit_record, srec *scatter_record) bool {
+	srec.is_specular = true
+	srec.pdf_ptr = nil
+	srec.attenuation = Vec3{1.0, 1.0, 1.0}
+
 	var refraction_ratio float64
 	if rec.front_face {
 		refraction_ratio = 1.0 / d.ref_idx
@@ -70,11 +85,15 @@ func (d dielectric) scatter(r_in ray, rec hit_record, attenuation *Vec3, scatter
 		direction = refract(unit_direction, rec.normal, refraction_ratio)
 	}
 
-	*scattered = ray{rec.p, direction, r_in.time}
+	srec.specular_ray = ray{rec.p, direction, r_in.time}
 	return true
 }
 
-func (d dielectric) emitted(u, v float64, p Vec3) Vec3 {
+func (d dielectric) scattering_pdf(r_in ray, rec hit_record, scattered ray) float64 {
+	return 0
+}
+
+func (d dielectric) emitted(r_in ray, rec hit_record, u, v float64, p Vec3) Vec3 {
 	return Vec3{0, 0, 0}
 }
 
@@ -88,10 +107,17 @@ type diffuse_light struct {
 	emit texture
 }
 
-func (d diffuse_light) scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool {
+func (d diffuse_light) scatter(r_in ray, rec hit_record, srec *scatter_record) bool {
 	return false
 }
 
-func (d diffuse_light) emitted(u, v float64, p Vec3) Vec3 {
-	return d.emit.value(u, v, p)
+func (d diffuse_light) scattering_pdf(r_in ray, rec hit_record, scattered ray) float64 {
+	return 0
+}
+
+func (d diffuse_light) emitted(r_in ray, rec hit_record, u, v float64, p Vec3) Vec3 {
+	if rec.front_face {
+		return d.emit.value(u, v, p)
+	}
+	return Vec3{0, 0, 0}
 }

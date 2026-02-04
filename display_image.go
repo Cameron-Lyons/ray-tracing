@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 )
 
-func ray_color(r ray, world hittable, background Vec3, depth int) Vec3 {
+func ray_color(r ray, world hittable, lights pdf_hittable, background Vec3, depth int) Vec3 {
 	if depth <= 0 {
 		return Vec3{0, 0, 0}
 	}
@@ -22,18 +22,40 @@ func ray_color(r ray, world hittable, background Vec3, depth int) Vec3 {
 		return background
 	}
 
-	emitted := rec.mat.emitted(rec.u, rec.v, rec.p)
+	emitted := rec.mat.emitted(r, rec, rec.u, rec.v, rec.p)
 
-	var scattered ray
-	var attenuation Vec3
-	if !rec.mat.scatter(r, rec, &attenuation, &scattered) {
+	var srec scatter_record
+	if !rec.mat.scatter(r, rec, &srec) {
 		return emitted
 	}
 
-	return vec_add(emitted, vec_mul(attenuation, ray_color(scattered, world, background, depth-1)))
+	if srec.is_specular {
+		return vec_mul(srec.attenuation, ray_color(srec.specular_ray, world, lights, background, depth-1))
+	}
+
+	var p pdf
+	if lights != nil {
+		light_pdf := new_hittable_pdf(lights, rec.p)
+		mixed := new_mixture_pdf(light_pdf, srec.pdf_ptr)
+		p = mixed
+	} else {
+		p = srec.pdf_ptr
+	}
+
+	scattered := ray{rec.p, p.generate(), r.time}
+	pdf_val := p.value(scattered.direction)
+
+	if pdf_val <= 0 {
+		return emitted
+	}
+
+	return vec_add(emitted, vec_mul_scalar(
+		vec_mul(srec.attenuation, ray_color(scattered, world, lights, background, depth-1)),
+		rec.mat.scattering_pdf(r, rec, scattered)/pdf_val,
+	))
 }
 
-func random_scene() hittable {
+func random_scene() (hittable, pdf_hittable) {
 	world := &hittable_list{}
 
 	ground_material := lambertian{checker_texture{solid_color{Vec3{0.2, 0.3, 0.1}}, solid_color{Vec3{0.9, 0.9, 0.9}}}}
@@ -64,10 +86,41 @@ func random_scene() hittable {
 	world.list = append(world.list, sphere{Vec3{-4, 1, 0}, 1.0, lambertian{noise_texture{new_perlin(), 4}}})
 	world.list = append(world.list, sphere{Vec3{4, 1, 0}, 1.0, metal{Vec3{0.7, 0.6, 0.5}, 0.0}})
 
-	return new_bvh_node(world.list, 0.0, 1.0)
+	return new_bvh_node(world.list, 0.0, 1.0), nil
 }
 
-func cornell_smoke() hittable {
+func cornell_box() (hittable, pdf_hittable) {
+	world := &hittable_list{}
+
+	red := lambertian{solid_color{Vec3{0.65, 0.05, 0.05}}}
+	white := lambertian{solid_color{Vec3{0.73, 0.73, 0.73}}}
+	green := lambertian{solid_color{Vec3{0.12, 0.45, 0.15}}}
+	light := diffuse_light{solid_color{Vec3{15, 15, 15}}}
+
+	world.list = append(world.list, yz_rect{0, 555, 0, 555, 555, green})
+	world.list = append(world.list, yz_rect{0, 555, 0, 555, 0, red})
+	world.list = append(world.list, flip_face{xz_rect{213, 343, 227, 332, 554, light}})
+	world.list = append(world.list, xz_rect{0, 555, 0, 555, 555, white})
+	world.list = append(world.list, xz_rect{0, 555, 0, 555, 0, white})
+	world.list = append(world.list, xy_rect{0, 555, 0, 555, 555, white})
+
+	box1 := new_box(Vec3{0, 0, 0}, Vec3{165, 330, 165}, white)
+	box1_rotated := new_rotate_y(box1, 15)
+	box1_translated := translate{box1_rotated, Vec3{265, 0, 295}}
+	world.list = append(world.list, box1_translated)
+
+	box2 := new_box(Vec3{0, 0, 0}, Vec3{165, 165, 165}, white)
+	box2_rotated := new_rotate_y(box2, -18)
+	box2_translated := translate{box2_rotated, Vec3{130, 0, 65}}
+	world.list = append(world.list, box2_translated)
+
+	lights := &hittable_list{}
+	lights.list = append(lights.list, xz_rect{213, 343, 227, 332, 554, nil})
+
+	return new_bvh_node(world.list, 0.0, 1.0), lights
+}
+
+func cornell_smoke() (hittable, pdf_hittable) {
 	world := &hittable_list{}
 
 	red := lambertian{solid_color{Vec3{0.65, 0.05, 0.05}}}
@@ -77,7 +130,7 @@ func cornell_smoke() hittable {
 
 	world.list = append(world.list, yz_rect{0, 555, 0, 555, 555, green})
 	world.list = append(world.list, yz_rect{0, 555, 0, 555, 0, red})
-	world.list = append(world.list, xz_rect{113, 443, 127, 432, 554, light})
+	world.list = append(world.list, flip_face{xz_rect{113, 443, 127, 432, 554, light}})
 	world.list = append(world.list, xz_rect{0, 555, 0, 555, 555, white})
 	world.list = append(world.list, xz_rect{0, 555, 0, 555, 0, white})
 	world.list = append(world.list, xy_rect{0, 555, 0, 555, 555, white})
@@ -93,13 +146,17 @@ func cornell_smoke() hittable {
 	world.list = append(world.list, new_constant_medium(box1_translated, 0.01, solid_color{Vec3{0, 0, 0}}))
 	world.list = append(world.list, new_constant_medium(box2_translated, 0.01, solid_color{Vec3{1, 1, 1}}))
 
-	return new_bvh_node(world.list, 0.0, 1.0)
+	lights := &hittable_list{}
+	lights.list = append(lights.list, xz_rect{113, 443, 127, 432, 554, nil})
+
+	return new_bvh_node(world.list, 0.0, 1.0), lights
 }
 
 func main() {
 	scene := 2
 
 	var world hittable
+	var lights pdf_hittable
 	var background Vec3
 	var lookfrom, lookat Vec3
 	var vfov, aperture float64
@@ -110,7 +167,7 @@ func main() {
 
 	switch scene {
 	case 1:
-		world = random_scene()
+		world, lights = random_scene()
 		background = Vec3{0.7, 0.8, 1.0}
 		lookfrom = Vec3{13, 2, 3}
 		lookat = Vec3{0, 0, 0}
@@ -119,8 +176,15 @@ func main() {
 		aspect_ratio = 3.0 / 2.0
 		image_width = 400
 		samples_per_pixel = 100
+	case 2:
+		world, lights = cornell_box()
+		background = Vec3{0, 0, 0}
+		lookfrom = Vec3{278, 278, -800}
+		lookat = Vec3{278, 278, 0}
+		vfov = 40
+		aperture = 0.0
 	default:
-		world = cornell_smoke()
+		world, lights = cornell_smoke()
 		background = Vec3{0, 0, 0}
 		lookfrom = Vec3{278, 278, -800}
 		lookat = Vec3{278, 278, 0}
@@ -149,7 +213,7 @@ func main() {
 					u := (float64(i) + rand.Float64()) / float64(image_width-1)
 					v := (float64(j) + rand.Float64()) / float64(image_height-1)
 					r := cam.get_ray(u, v)
-					pixel_color = vec_add(pixel_color, ray_color(r, world, background, max_depth))
+					pixel_color = vec_add(pixel_color, ray_color(r, world, lights, background, max_depth))
 				}
 
 				scale := 1.0 / float64(samples_per_pixel)

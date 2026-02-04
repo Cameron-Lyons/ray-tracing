@@ -2,6 +2,22 @@ package main
 
 import "math"
 
+type flip_face struct {
+	ptr hittable
+}
+
+func (f flip_face) hit(r ray, t_min float64, t_max float64, rec *hit_record) bool {
+	if !f.ptr.hit(r, t_min, t_max, rec) {
+		return false
+	}
+	rec.front_face = !rec.front_face
+	return true
+}
+
+func (f flip_face) bounding_box(time0, time1 float64) (aabb, bool) {
+	return f.ptr.bounding_box(time0, time1)
+}
+
 type translate struct {
 	ptr    hittable
 	offset Vec3

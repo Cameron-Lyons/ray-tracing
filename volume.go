@@ -9,13 +9,19 @@ type isotropic struct {
 	albedo texture
 }
 
-func (iso isotropic) scatter(r_in ray, rec hit_record, attenuation *Vec3, scattered *ray) bool {
-	*scattered = ray{rec.p, random_in_unit_sphere(), r_in.time}
-	*attenuation = iso.albedo.value(rec.u, rec.v, rec.p)
+func (iso isotropic) scatter(r_in ray, rec hit_record, srec *scatter_record) bool {
+	srec.is_specular = true
+	srec.specular_ray = ray{rec.p, random_in_unit_sphere(), r_in.time}
+	srec.attenuation = iso.albedo.value(rec.u, rec.v, rec.p)
+	srec.pdf_ptr = nil
 	return true
 }
 
-func (iso isotropic) emitted(u, v float64, p Vec3) Vec3 {
+func (iso isotropic) scattering_pdf(r_in ray, rec hit_record, scattered ray) float64 {
+	return 0
+}
+
+func (iso isotropic) emitted(r_in ray, rec hit_record, u, v float64, p Vec3) Vec3 {
 	return Vec3{0, 0, 0}
 }
 
